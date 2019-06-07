@@ -1,0 +1,2 @@
+# dubbo-UniformityHashSelector
+对dubbo自适应负载均衡的设计实现进行均匀的hash分片
