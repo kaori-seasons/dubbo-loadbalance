@@ -1,5 +1,5 @@
 # dubbo-UniformityHashSelector
-对dubbo自适应负载均衡的设计实现进行均匀的hash分片
+对dubbo自适应负载均衡的设计实现进行优先随机负载
 
 
 # 试想是这样的
