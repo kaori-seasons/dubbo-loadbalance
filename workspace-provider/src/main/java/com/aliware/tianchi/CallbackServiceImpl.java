@@ -1,38 +1,59 @@
 package com.aliware.tianchi;
 
+import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.config.ProtocolConfig;
+import org.apache.dubbo.config.context.ConfigManager;
 import org.apache.dubbo.rpc.listener.CallbackListener;
 import org.apache.dubbo.rpc.service.CallbackService;
 
-import java.util.Date;
+import com.aliware.tianchi.comm.CustomerInfo;
+
 import java.util.Map;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * @author daofeng.xjf
- * <p>
- * 服务端回调服务
- * 可选接口
- * 用户可以基于此服务，实现服务端向客户端动态推送的功能
+ * @author complone
  */
 public class CallbackServiceImpl implements CallbackService {
+
+    private String getInfo() {
+        CustomerInfo customerInfo = ProviderManager.getServerInfo();
+        Optional<ProtocolConfig> protocolConfig = ConfigManager.getInstance().getProtocol(Constants.DUBBO_PROTOCOL);
+        String env = System.getProperty("quota");
+        int providerThread = protocolConfig.get().getThreads();
+        long allSpendTimeTotal = customerInfo.getAllSpendTimeTotal().get();
+        long allReqCount = customerInfo.getAllReqCount().get();
+        long allAvgTime = 0;
+        long allActiveCount = customerInfo.getAllActiveCount().get();
+        if (allReqCount != 0) {
+            allAvgTime = allSpendTimeTotal / allReqCount;
+        }
+        StringBuilder info = new StringBuilder();
+        info.append(env).append(",").append(providerThread).append(",").append(allActiveCount).append(",").append(allAvgTime).append(",").append(allReqCount);
+
+        return info.toString();
+    }
 
     public CallbackServiceImpl() {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
+
                 if (!listeners.isEmpty()) {
                     for (Map.Entry<String, CallbackListener> entry : listeners.entrySet()) {
                         try {
-                            entry.getValue().receiveServerMsg(System.getProperty("quota") + " " + new Date().toString());
+                            entry.getValue().receiveServerMsg(getInfo());
                         } catch (Throwable t1) {
                             listeners.remove(entry.getKey());
                         }
                     }
+                    ProviderManager.resetTime();
                 }
             }
-        }, 0, 5000);
+        }, 0, 1000);
     }
 
     private Timer timer = new Timer();
@@ -46,6 +67,7 @@ public class CallbackServiceImpl implements CallbackService {
     @Override
     public void addListener(String key, CallbackListener listener) {
         listeners.put(key, listener);
-        listener.receiveServerMsg(new Date().toString()); // send notification for change
+        listener.receiveServerMsg(getInfo());
     }
+
 }

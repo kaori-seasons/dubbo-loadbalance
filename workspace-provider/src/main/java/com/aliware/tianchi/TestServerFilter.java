@@ -9,21 +9,25 @@ import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcException;
 
 /**
- * @author daofeng.xjf
- *
- * 服务端过滤器
- * 可选接口
- * 用户可以在服务端拦截请求和响应,捕获 rpc 调用时产生、服务端返回的已知异常。
- */
+* @Author complone
+*/
+
 @Activate(group = Constants.PROVIDER)
 public class TestServerFilter implements Filter {
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        try{
+
+        boolean isSuccess = false;
+        long begin = System.currentTimeMillis();
+        try {
+            ProviderManager.startTime();
             Result result = invoker.invoke(invocation);
+            isSuccess = true;
             return result;
-        }catch (Exception e){
+        } catch (Exception e) {
             throw e;
+        } finally {
+            ProviderManager.endTime(System.currentTimeMillis() - begin, isSuccess);
         }
 
     }
